@@ -1,6 +1,8 @@
 
 namespace LeanDemo
 
+set_option autoImplicit false
+
 /-!
 
   # Lean Meetup Demo: Lean 101
@@ -22,7 +24,7 @@ namespace LeanDemo
 --     /-- We are defining an **inductive type**
 --    /
 --   /      /-- `Nat` is the name of the type being defined
---  /\     /
+--  /      /
 inductive Nat where
   | zero : Nat            -- `zero` is a `Nat`
   | succ (n : Nat) : Nat  -- if `n` is a `Nat`, then `succ n` is a `Nat`
@@ -54,7 +56,6 @@ instance : OfNat Nat (nat_lit 2) := ⟨succ 1⟩  -- `2` is `succ 1`
 instance : OfNat Nat (nat_lit 3) := ⟨succ 2⟩  -- `3` is `succ 2`
 
 
-
 /-!
   Now that we have this notation, let's proof I didn't mess anything up!
 -/
@@ -62,7 +63,7 @@ instance : OfNat Nat (nat_lit 3) := ⟨succ 2⟩  -- `3` is `succ 2`
 --    /-- We're proving a theorem!
 --   /
 --  /        /-- The name of our theorem is `zero_eq`
--- /\       /\
+-- /        /
 theorem zero_eq :
     0 = zero := by    -- The statement we are proving is `0 = zero`, then `:= by` starts the proof
   rfl                 -- `rfl` is a **tactic** which proves thing that are true by definition
@@ -166,6 +167,43 @@ theorem zero_add :
     -- `rw [a, b]` is the same as `rw [a]`, then `rw [b]`
     rw [add_succ, ih]
 
+
+--                  /-- We can also put the universally quantified variables before the `:`
+--                 /
+theorem succ_add (x y : Nat) :
+    (succ x) + y = succ (x + y) := by
+  induction y
+  case zero =>
+    rfl
+  case succ y ih =>
+    rw [add_succ, add_succ, ih]
+
+-- We can use `#check` to show that `succ_add` indeed proves
+--    `∀ (x y : Nat), (succ x) + y = succ (x + y)`
+#check succ_add
+
+
+/-!
+  We are now ready to prove the commutativity of addition
+-/      
+theorem add_comm (x y : Nat) : 
+    x + y = y + x := by
+  induction y
+  case zero =>
+    -- if `foo : a = b`, then `rw [foo]` replaces `a` with `b`, 
+    -- but `rw [←foo]` does the reverse: it replaces `b` with `a`
+    rw [←zero_eq, zero_add, add_zero]
+  case succ y ih =>
+    -- **sorry** can be used to "finish" a proof, without actually proving it
+    sorry
+
+/-!
+  And associativity
+-/
+theorem add_assoc (x y z : Nat) :
+    (x + y) + z = x + (y + z) := by
+  sorry
+  
 
 
 

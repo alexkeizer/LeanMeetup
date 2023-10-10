@@ -163,7 +163,8 @@ theorem zero_add :
   -- Otherwise, `x` must be `succ x'` for some `x'`
   -- We also get an induction hypothesis `ih : 0 + x' = x'` 
   case succ x' ih   => 
-    rw [add_succ, ih]    -- `rw [a, b]` is the same as `rw [a]`, then `rw [b]`
+    -- `rw [a, b]` is the same as `rw [a]`, then `rw [b]`
+    rw [add_succ, ih]
 
 
 

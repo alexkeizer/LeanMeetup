@@ -57,6 +57,8 @@ instance : OfNat Nat (nat_lit 3) := ⟨succ 2⟩  -- `3` is `succ 2`
 
 
 /-!
+  ## Theorems and Tactics
+
   Now that we have this notation, let's proof I didn't mess anything up!
 -/
 

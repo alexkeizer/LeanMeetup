@@ -18,8 +18,6 @@ set_option autoImplicit false
   In maths, we would talk about the **set** of natural numbers.
   Lean, however, has as type theory as its foundation, so we generally talk about **types**. 
 
-  So without further ado, here is the definition 
-
 -/
 --     /-- We are defining an **inductive type**
 --    /
@@ -30,19 +28,25 @@ inductive Nat where
   | succ (n : Nat) : Nat  -- if `n` is a `Nat`, then `succ n` is a `Nat`
 
 /-!
+  `:` is the type-equivalent of `∈`, and is usually read as "is a".
+  `x : α` means that `x` is of type `α`.
+
+  ## Constructors
   We call `zero` and `succ` the **constructors** of `Nat`, and they correspond to the first two
   bullet-points in our pen-and-paper definition.
-  The last bullet-point, that that nothing else is a natural number, 
-  is implicit in the definition of an inductive type.
+  The last bullet-point, that nothing else is a natural number, is implicit in the definition of an inductive type.
+
+  The `inductive` command has added three definitions to the environment, 
+  one for the type itself `Nat`, and one for each constructor.
+  We can use the `#check` command to check the types
 -/
 
-#check Nat
-#check Nat.zero
-#check Nat.succ
+#check Nat      -- `LeanDemo.Nat : Type`
+#check Nat.zero -- `LeanDemo.Nat.zero : Nat`
+#check Nat.succ -- `LeanDemo.Nat.succ (n : Nat) : Nat`
 
 
-/- `open Nat` means that `Nat.zero` and `Nat.succ` can now be referred to as 
-    `zero` and `succ`, respectively -/
+/- `open Nat` means that `Nat.zero` and `Nat.succ` can now be referred to as `zero` and `succ`, respectively -/
 open Nat
 
 /-!
@@ -59,7 +63,30 @@ instance : OfNat Nat (nat_lit 3) := ⟨succ 2⟩  -- `3` is `succ 2`
 /-!
   ## Theorems and Tactics
 
-  Now that we have this notation, let's proof I didn't mess anything up!
+  In Lean, we define a theorem as follows:
+  ```
+  theorem [name_of_theorem] :
+      [statement_of_theorem] := by
+    [proof]
+  ```
+
+  The name of a theorem is just an identifier allowing us to refer to it in later results.
+  The statement of the theorem is the actual thing we are trying to proof. 
+  For example, `1 + 0 = 1` could be the statement of a theorem.
+
+  The word `by` indicates that we are starting a proof in **tactic mode**.
+  Lean will give us an interactive info-view showing the current proof state,
+  including the **goals** we are trying to proof.
+  The goal will initially be just the statement of the theorem.
+  In the proof, we write tactics to either
+    * Prove the goal directly, closing it, or
+    * Transform the goal into a simpler goal, which we can then prove with further tactics
+
+  `rfl` (short for *reflexive*) is the first tactic we will see. It can prove goals of the form `x = y`, where
+    `x` and `y` are "definitionally equal".
+    Generally, that means `rfl` can prove the goal if the equality is true by definition
+
+  Let's see some examples, where we prove the notation I defined indeed uses `zero` and `succ` correctly
 -/
 
 --    /-- We're proving a theorem!
@@ -84,22 +111,47 @@ theorem three_eq_succ_two :
 
 
 /-!
-  Now let's proof that `3` is equal to `succ (succ (succ (zero)))`
+  Now let's proof that `3` is equal to `succ (succ (succ (zero)))`.
+
+  We could use `rfl` again, it can see through multiple definitions.
+  However, I want to show another tactic.
+
+  `rw [h]` (short for *rewrite*) takes an equality `h : a = b` as argument, and replaces occurences 
+    of `a` in the goal with `b`. If the resulting goal is sufficiently simple, `rw` closes (proves) 
+    the goal
 -/
 
 theorem three_eq_succ_succ_succ_zero :
     3 = succ (succ (succ zero)) := by
-  -- `rfl` would still work!
-  rw [three_eq_succ_two]  -- `rw` is another tactic that substitutes a given equality
+  rw [three_eq_succ_two]
   rw [two_eq_succ_one]
   rw [one_eq_succ_zero]
   rw [zero_eq]
 
+/-!
+  Note that we can also give `rw` multiple, comma-separeted, equalities at the same time, 
+-/
+
+theorem three_eq_succ_succ_succ_zero' :
+    3 = succ (succ (succ zero)) := by
+  rw [three_eq_succ_two, two_eq_succ_one, one_eq_succ_zero, zero_eq]
 
 
 
 /-!
   ## Addition
+  Now let us define what it means to add two natural numbers together!
+  The syntax should be somewhat familiar if you've done any functional programing.
+  If not, don't worry about the syntax too much!
+
+  Essentially, we are defining `add` as a function that takes two `Nat`s as argument, and returns
+  a third `Nat`. In Lean, we spell the type of such functions as `Nat → Nat → Nat`.
+  Note that `→` is right-associative, so the above type is the same as `Nat → (Nat → Nat)`.
+
+  Then, we define `add` **recursively**, by doing a case-distinction on the second argument.
+  That is, if the second argument is `0`, then we define `x + 0 = x`.
+  If the second argument is instead `succ y`, then we are allowed to assume that `x + y` is
+  already defined, and indeed use that to define `x + (succ y) = succ (x + y)`.
 -/
 
 --     /-- We are giving a **definition**
@@ -119,13 +171,20 @@ instance : Add Nat := ⟨add⟩
 
 
 /-!
-  Theorems about addition
+  Let's prove some theorems about addition!
+  We want to prove statements about arbitrary natural numbers `x`. 
+  The syntax for this is `∀ (x : Nat), ...`, and the corresponding tactic is
+
+  `intro x`
+    If the goal is `⊢ ∀ (y : α), P y`, then `intro x` will move the universally quantified
+    variable into the local context, renaming all occurences of `y` to the given name `x` and
+    transforming the goal into `x : α ⊢ P x`
 -/
 
 /-- `x + 0` is equal to `x`, for all natural numbers `x` -/
 theorem add_zero : 
     ∀ (x : Nat), x + 0 = x := by
-  intro x     -- introduce the universally quantified variable `x`
+  intro y     -- introduce the universally quantified variable `x`
   rfl
 
 /-- `x + (succ y)` is equal to `succ (x + y)`, for all natural numbers `x` and `y` -/
@@ -153,32 +212,63 @@ theorem zero_add :
   -- 
   -- 
   -- 
-  --
-  --
-  intro x
-  -- New tactic! **induction** does a case split on `x` and generates an induction hypothesis
-  induction x 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  -- 
+  /-
+    `induction x`
+      Given a natural number `x`, the `induction` tactic will split a goal `⊢ P x` into two goals:
+      * the base case `⊢ P 0`, and
+      * the recursive step `ih : P x ⊢ P (succ x)`
 
+    `case zero => ...` 
+      focusses on the goal named `zero` (i.e., the base case)
+
+    `case succ x' ih => ...`
+      focusses on the goal names `succ` (i.e., the recursive step), 
+      uses `x'` as the name for the natural number that `x` is a successor of, and 
+      uses `ih` as the name of the induction hypothesis
+  -/
+  intro x
+  induction x 
   -- Suppose that `x = 0`
   case zero         => 
     rfl
-
   -- Otherwise, `x` must be `succ x'` for some `x'`
   -- We also get an induction hypothesis `ih : 0 + x' = x'` 
-  case succ x' ih   => 
-    -- `rw [a, b]` is the same as `rw [a]`, then `rw [b]`
+  case succ x' ih   =>
     rw [add_succ, ih]
 
 
---                  /-- We can also put the universally quantified variables before the `:`
---                 /
+
+
+
+/-
+  We can also put universally quantified variables before the `:`, directly after the theorem name.
+  This has the same meaning, but does not require us to `intro` the quantified variables, they
+  get put in the local context directly
+-/
 theorem succ_add (x y : Nat) :
     (succ x) + y = succ (x + y) := by
   induction y
-  case zero =>
-    rfl
-  case succ y ih =>
-    rw [add_succ, add_succ, ih]
+  case zero =>      rfl
+  case succ y ih => rw [add_succ, add_succ, ih]
 
 -- We can use `#check` to show that `succ_add` indeed proves
 --    `∀ (x y : Nat), (succ x) + y = succ (x + y)`
@@ -187,16 +277,19 @@ theorem succ_add (x y : Nat) :
 
 /-!
   We are now ready to prove the commutativity of addition
+
+  `rw [←h]`: given an equality `h : a = b`, `rw [←h]` rewrites in the opposite direction.
+    That is, it replaces occurences of the right-hand-side `b` in the goal with `a`
+
+  `sorry` will "prove" any goal. This has the effect of assuming the truth of that goal as an
+    axiom and it is generally used to indicate a "hole" in a proof that you intend to finish later
 -/      
 theorem add_comm (x y : Nat) : 
     x + y = y + x := by
   induction y
   case zero =>
-    -- if `foo : a = b`, then `rw [foo]` replaces `a` with `b`, 
-    -- but `rw [←foo]` does the reverse: it replaces `b` with `a`
     rw [←zero_eq, zero_add, add_zero]
   case succ y ih =>
-    -- **sorry** can be used to "finish" a proof, without actually proving it
     sorry
 
 /-!
@@ -218,7 +311,16 @@ theorem add_assoc (x y z : Nat) :
 
 
 
+/-!
+  # Now it's your turn!
 
+  You can find this file at:
+    https://github.com/alexkeizer/LeanMeetup/blob/main/LeanMeetup/Demo01.lean
+
+  * https://adam.math.hhu.de/#/g/hhu-adam/NNG4
+  * https://github.com/PatrickMassot/GlimpseOfLean/tree/master
+
+-/
 
 
 

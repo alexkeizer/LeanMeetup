@@ -42,27 +42,18 @@ theorem Nat.ge_mod (n x : ℕ) : (n+1) > (x % (n+1)) := by
       unfold Nat.modCore
       cases x <;> simp [Nat.succ_le_succ_iff]
       next =>
-        split_ifs
-        · simp
-        · cases n
-          · contradiction
-          · simp
+        cases n <;> simp
       next x =>
+        cases' n with n <;> simp
         split_ifs with h
-        · cases n
+        · cases hm : x - n
+          next => simp
           next =>
-            simp only [zero_eq, ge_iff_le, nonpos_iff_eq_zero, add_eq_zero, and_false, tsub_zero,
-              zero_add, modCore_one, _root_.zero_le]
-          next n  =>
-            simp
-            cases hm : x - n
-            next => simp
-            next =>
-              apply ih
-              apply Nat.lt_of_succ_le
-              apply Nat.le_succ_of_le
-              rw [←hm]
-              apply sub_le
+            apply ih
+            apply Nat.lt_of_succ_le
+            apply Nat.le_succ_of_le
+            rw [←hm]
+            apply sub_le
         · apply Nat.succ_lt_succ_iff.mpr
           apply not_le.mp h
 

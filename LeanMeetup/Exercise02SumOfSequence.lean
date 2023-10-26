@@ -1,5 +1,9 @@
 import Mathlib
 
+/-!
+  You can run `lake exe cache get` in your shell to download the built Mathlib files from the cache
+-/
+
 /--
   `sumOfSequence n` is the sum of the sequence `0, 1, ..., n`
 -/
